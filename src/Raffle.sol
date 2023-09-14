@@ -36,6 +36,12 @@ import {VRFConsumerBaseV2} from "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2
 contract Raffle is VRFConsumerBaseV2 {
     error Raffle_NotEnoughEthSent();
     error Raffle_TransferFailed();
+    error Raffle_RaffleNotOpen();
+
+    enum RaffleState {
+        OPEN,
+        CALCULATING
+    }
 
     uint16 private constant REQUEST_CONFIRMATIONS = 3;
     uint32 private constant NUM_WORDS = 1;
@@ -50,6 +56,7 @@ contract Raffle is VRFConsumerBaseV2 {
     address payable[] private s_players;
     uint256 private s_lastTimestamp;
     address private s_recentWinner;
+    RaffleState private s_raffleState;
 
     event EnteredRaffle(address indexed player);
 
@@ -67,6 +74,8 @@ contract Raffle is VRFConsumerBaseV2 {
         i_gasLane = gasLane;
         i_subscriptionId = subscriptionId;
         i_callbackGasLimit = callbackGasLimit;
+
+        s_raffleState = RaffleState.OPEN;
         s_lastTimestamp = block.timestamp;
     }
 
@@ -74,6 +83,9 @@ contract Raffle is VRFConsumerBaseV2 {
         // require(msg.value >= i_entranceFee, "Not enough ETH sent!");
         if (msg.value < i_entranceFee) {
             revert Raffle_NotEnoughEthSent();
+        }
+        if (s_raffleState != RaffleState.OPEN) {
+            revert Raffle_RaffleNotOpen();
         }
         s_players.push(payable(msg.sender));
         emit EnteredRaffle(msg.sender);
@@ -83,6 +95,7 @@ contract Raffle is VRFConsumerBaseV2 {
         if ((block.timestamp - s_lastTimestamp) < i_interval) {
             revert();
         }
+        s_raffleState = RaffleState.CALCULATING;
         uint256 requestId = i_vrfCoordinator.requestRandomWords(
             i_gasLane,
             i_subscriptionId,
@@ -99,6 +112,7 @@ contract Raffle is VRFConsumerBaseV2 {
         uint256 indexOfWinner = _randomWords[0] % s_players.length;
         address payable winner = s_players[indexOfWinner];
         s_recentWinner = winner;
+        s_raffleState = RaffleState.OPEN;
         (bool success, ) = winner.call{value: address(this).balance}("");
         if (!success) {
             revert Raffle_TransferFailed();
