@@ -34,9 +34,9 @@ import {VRFConsumerBaseV2} from "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2
  */
 
 contract Raffle is VRFConsumerBaseV2 {
-    error Raffle_NotEnoughEthSent();
-    error Raffle_TransferFailed();
-    error Raffle_RaffleNotOpen();
+    error Raffle__NotEnoughEthSent();
+    error Raffle__TransferFailed();
+    error Raffle__RaffleNotOpen();
     error Raffle__UpkeepNotNeeded(
         uint256 balance,
         uint256 numPlayers,
@@ -88,10 +88,10 @@ contract Raffle is VRFConsumerBaseV2 {
     function enterRaffle() external payable {
         // require(msg.value >= i_entranceFee, "Not enough ETH sent!");
         if (msg.value < i_entranceFee) {
-            revert Raffle_NotEnoughEthSent();
+            revert Raffle__NotEnoughEthSent();
         }
         if (s_raffleState != RaffleState.OPEN) {
-            revert Raffle_RaffleNotOpen();
+            revert Raffle__RaffleNotOpen();
         }
         s_players.push(payable(msg.sender));
         emit EnteredRaffle(msg.sender);
@@ -150,7 +150,7 @@ contract Raffle is VRFConsumerBaseV2 {
         emit PickedWinner(winner);
         (bool success, ) = winner.call{value: address(this).balance}("");
         if (!success) {
-            revert Raffle_TransferFailed();
+            revert Raffle__TransferFailed();
         }
     }
 
@@ -160,5 +160,9 @@ contract Raffle is VRFConsumerBaseV2 {
 
     function getRaffleState() external view returns (RaffleState) {
         return s_raffleState;
+    }
+
+    function getPlayer(uint256 indexOfPlayer) external view returns (address) {
+        return s_players[indexOfPlayer];
     }
 }
