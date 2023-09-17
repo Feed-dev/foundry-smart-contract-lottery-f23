@@ -18,9 +18,9 @@ contract HelperConfig is Script {
     NetworkConfig public activeNetworkConfig;
 
     constructor() {
-        if (block.chainid = 11155111) {
+        if (block.chainid == 11155111) {
             activeNetworkConfig = getSepoliaEthConfig();
-        } else (block.chainid = 11155112) {
+        } else {
             activeNetworkConfig = getOrCreateAnvilEthConfig();
         }
     }
@@ -37,10 +37,7 @@ contract HelperConfig is Script {
             });
     }
 
-    function ggetOrCreateAnvilEthConfig()
-        public
-        returns (NetworkConfig memory)
-    {
+    function getOrCreateAnvilEthConfig() public returns (NetworkConfig memory) {
         if (activeNetworkConfig.vrfCoordinator != address(0)) {
             return activeNetworkConfig;
         }
@@ -49,14 +46,17 @@ contract HelperConfig is Script {
         uint96 gasPriceLink = 1e9;
 
         vm.startBroadcast();
-        VRFCoordinatorV2Mock vrfCoordinator = new VRFCoordinatorV2Mock(baseFee, gasPriceLink);
+        VRFCoordinatorV2Mock vrfCoordinatorV2Mock = new VRFCoordinatorV2Mock(
+            baseFee,
+            gasPriceLink
+        );
         vm.stopBroadcast();
 
         return
             NetworkConfig({
                 entranceFee: 0.01 ether,
                 interval: 30,
-                vrfCoordinator: address(vrfCoordinatorMock),
+                vrfCoordinator: address(vrfCoordinatorV2Mock),
                 gasLane: 0x474e34a077df58807dbe9c96d3c009b23b3c6d0cce433e59bbf5b34f823bc56c,
                 subscriptionId: 0, // Update this with our subID!
                 callbackGasLimit: 500000 // 500,000 gas!
