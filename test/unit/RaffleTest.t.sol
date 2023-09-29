@@ -7,6 +7,7 @@ import {DeployRaffle} from "../../script/DeployRaffle.s.sol";
 import {Test, console} from "forge-std/Test.sol";
 import {HelperConfig} from "../../script/HelperConfig.s.sol";
 import {Vm} from "forge-std/Vm.sol";
+import {StdCheats} from "forge-std/StdCheats.sol";
 import {VRFCoordinatorV2Mock} from "@chainlink/contracts/src/v0.8/mocks/VRFCoordinatorV2Mock.sol";
 
 contract RaffleTest is Test {
@@ -65,7 +66,10 @@ contract RaffleTest is Test {
     }
 
     function testEmitsEventOnEntrance() public {
+        // Arrange
         vm.prank(PLAYER);
+
+        // Act / Assert
         vm.expectEmit(true, false, false, false, address(raffle));
         emit EnterRaffle(PLAYER);
         raffle.enterRaffle{value: entranceFee}();
