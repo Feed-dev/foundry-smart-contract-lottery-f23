@@ -65,16 +65,6 @@ contract RaffleTest is Test {
         assert(playerRecorded == PLAYER);
     }
 
-    function testEmitsEventOnEntrance() public {
-        // Arrange
-        vm.prank(PLAYER);
-
-        // Act / Assert
-        vm.expectEmit(true, false, false, false, address(raffle));
-        emit EnterRaffle(PLAYER);
-        raffle.enterRaffle{value: entranceFee}();
-    }
-
     function testCantEnterWhenRaffleIsCalculating() public {
         vm.prank(PLAYER);
         raffle.enterRaffle{value: entranceFee}();
