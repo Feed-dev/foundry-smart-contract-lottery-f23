@@ -10,12 +10,12 @@ import {Vm} from "forge-std/Vm.sol";
 import {StdCheats} from "forge-std/StdCheats.sol";
 import {VRFCoordinatorV2Mock} from "@chainlink/contracts/src/v0.8/mocks/VRFCoordinatorV2Mock.sol";
 
-contract RaffleTest is Test {
+contract RaffleTest is StdCheats, Test {
     /* Events */
-    event EnterRaffle(address indexed player);
+    event EnteredRaffle(address indexed player);
 
-    Raffle raffle;
-    HelperConfig helperConfig;
+    Raffle public raffle;
+    HelperConfig public helperConfig;
 
     uint256 entranceFee;
     uint256 interval;
@@ -26,11 +26,13 @@ contract RaffleTest is Test {
     address link;
 
     address public PLAYER = makeAddr("player");
-    uint public constant STARTING_USER_BALANCE = 10 ether;
+    uint256 public constant STARTING_USER_BALANCE = 10 ether;
 
     function setUp() external {
         DeployRaffle deployer = new DeployRaffle();
         (raffle, helperConfig) = deployer.run();
+        vm.deal(PLAYER, STARTING_USER_BALANCE);
+
         (
             entranceFee,
             interval,
@@ -38,9 +40,9 @@ contract RaffleTest is Test {
             gasLane,
             subscriptionId,
             callbackGasLimit,
-            link
+            link,
+
         ) = helperConfig.activeNetworkConfig();
-        vm.deal(PLAYER, STARTING_USER_BALANCE);
     }
 
     function testRaffleInitializesInOpenState() public view {
@@ -63,6 +65,16 @@ contract RaffleTest is Test {
         raffle.enterRaffle{value: entranceFee}();
         address playerRecorded = raffle.getPlayer(0);
         assert(playerRecorded == PLAYER);
+    }
+
+    function testEmitsEventOnEntrance() public {
+        // Arrange
+        vm.prank(PLAYER);
+
+        // Act / Assert
+        vm.expectEmit(true, false, false, false, address(raffle));
+        emit EnteredRaffle(PLAYER);
+        raffle.enterRaffle{value: entranceFee}();
     }
 
     function testCantEnterWhenRaffleIsCalculating() public {
@@ -189,7 +201,7 @@ contract RaffleTest is Test {
 
     function testFulfillRandomWordsCanOnlyBeCalledAfterPerformUpkeep(
         uint256 randomRequestId
-    ) public raffleEnteredAndTimePassed {
+    ) public raffleEnteredAndTimePassed skipFork {
         // Arrange
         vm.expectRevert("nonexistent request");
         VRFCoordinatorV2Mock(vrfCoordinator).fulfillRandomWords(
